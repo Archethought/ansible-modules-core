@@ -72,6 +72,12 @@ options:
         - Indicate desired state of the resource
      choices: ['present', 'absent']
      default: present
+   insecure:
+     description:
+        - Allow use of self-signed SSL/TLS certificates.
+     required: no
+     choices: ['yes', 'no']
+     default: no
 requirements: [ python-keystoneclient ]
 author: Lorin Hochstein
 '''
@@ -95,14 +101,14 @@ else:
     keystoneclient_found = True
 
 
-def authenticate(endpoint, token, login_user, login_password, login_tenant_name):
+def authenticate(endpoint, token, login_user, login_password, login_tenant_name, insecure):
     """Return a keystone client object"""
 
     if token:
-        return client.Client(endpoint=endpoint, token=token)
+        return client.Client(endpoint=endpoint, token=token, insecure=insecure)
     else:
         return client.Client(auth_url=endpoint, username=login_user,
-                             password=login_password, tenant_name=login_tenant_name)
+                             password=login_password, tenant_name=login_tenant_name, insecure=insecure)
 
 
 def tenant_exists(keystone, tenant):
@@ -296,6 +302,7 @@ def main():
             endpoint=dict(required=False,
                           default="http://127.0.0.1:35357/v2.0"),
             token=dict(required=False),
+            insecure=dict(required=False, default=False, choices=BOOLEANS),
             login_user=dict(required=False),
             login_password=dict(required=False),
             login_tenant_name=dict(required=False)
@@ -321,12 +328,13 @@ def main():
     role = module.params['role']
     state = module.params['state']
     endpoint = module.params['endpoint']
+    insecure = module.boolean( module.params[ 'insecure'])
     token = module.params['token']
     login_user = module.params['login_user']
     login_password = module.params['login_password']
     login_tenant_name = module.params['login_tenant_name']
 
-    keystone = authenticate(endpoint, token, login_user, login_password, login_tenant_name)
+    keystone = authenticate(endpoint, token, login_user, login_password, login_tenant_name, insecure)
 
     check_mode = module.check_mode
 
